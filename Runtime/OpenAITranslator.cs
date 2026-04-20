@@ -14,8 +14,10 @@ namespace Unity.Localization.AI
         public const string MODEL_PLAYERPREFS_KEY = "OPENAI_MODEL";
         public const string SYSTEM_PROMPT_PLAYERPREFS_KEY = "OPENAI_SYSTEM_PROMPT";
         public const string OVERRIDE_PROMPT_PLAYERPREFS_KEY = "OPENAI_OVERRIDE_PROMPT";
+        public const string BASE_URL_PLAYERPREFS_KEY = "OPENAI_BASE_URL";
 
         public const string DEFAULT_MODEL = "gpt-4o";
+        public const string DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
         public const string DEFAULT_SYSTEM_PROMPT = "You are a professional translator. Maintain the tone and nuances of the original text. Only provide the translated text without any explanations.";
 
         [Serializable]
@@ -49,7 +51,13 @@ namespace Unity.Localization.AI
             string apiKey = PlayerPrefs.GetString(API_KEY_PLAYERPREFS_KEY, "");
             if (string.IsNullOrEmpty(apiKey))
             {
-                throw new Exception("OpenAI API Key is not set. Please set it in Unity Preferences > Localization AI.");
+                throw new Exception("API Key is not set. Please set it in Unity Preferences > Localization AI.");
+            }
+
+            string baseUrl = PlayerPrefs.GetString(BASE_URL_PLAYERPREFS_KEY, DEFAULT_BASE_URL);
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                baseUrl = DEFAULT_BASE_URL;
             }
 
             using (HttpClient client = new HttpClient())
@@ -85,7 +93,7 @@ namespace Unity.Localization.AI
                 string json = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync("https://api.openai.com/v1/chat/completions", content);
+                var response = await client.PostAsync(baseUrl, content);
                 if (response.IsSuccessStatusCode)
                 {
                     string responseString = await response.Content.ReadAsStringAsync();
@@ -95,7 +103,7 @@ namespace Unity.Localization.AI
                 else
                 {
                     string error = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"OpenAI API Error: {response.StatusCode} - {error}");
+                    throw new Exception($"API Error ({baseUrl}): {response.StatusCode} - {error}");
                 }
             }
         }
